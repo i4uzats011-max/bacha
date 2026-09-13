@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, BookOpen, CheckCircle, HelpCircle } from 'lucide-react';
+import { X, Plus, Trash2, BookOpen, CheckCircle, HelpCircle, FileCode, Copy, Download } from 'lucide-react';
 import { Question, Level, SubjectId } from '../types';
 import { soundManager } from '../utils/sound';
 
@@ -25,11 +25,11 @@ export const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
   onQuestionsUpdated,
 }) => {
   const [questions, setQuestions] = useState<Question[]>(() => getStoredCustomQuestions());
-  const [activeTab, setActiveTab] = useState<'list' | 'add'>('add');
+  const [activeTab, setActiveTab] = useState<'list' | 'add' | 'json'>('add');
 
   // Form State
   const [subject, setSubject] = useState<Exclude<SubjectId, 'all'>>('math');
-  const [level, setLevel] = useState<Level>(1);
+  const [level, setLevel] = useState<Level>(3);
   const [questionHi, setQuestionHi] = useState('');
   const [questionEn, setQuestionEn] = useState('');
   const [options, setOptions] = useState<[string, string, string, string]>(['', '', '', '']);
@@ -37,6 +37,11 @@ export const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
   const [explanationHi, setExplanationHi] = useState('');
   const [hintHi, setHintHi] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // JSON Admin State
+  const [jsonInput, setJsonInput] = useState('');
+  const [jsonDefaultLevel, setJsonDefaultLevel] = useState<Level>(3);
+  const [jsonDefaultSubject, setJsonDefaultSubject] = useState<Exclude<SubjectId, 'all'>>('math');
 
   useEffect(() => {
     localStorage.setItem(CUSTOM_QUESTIONS_STORAGE_KEY, JSON.stringify(questions));
@@ -91,6 +96,120 @@ export const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
     }
   };
 
+  const handleImportJson = () => {
+    if (!jsonInput.trim()) {
+      alert('कृपया JSON दर्ज करें!');
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(jsonInput.trim());
+      let rawList: any[] = [];
+      let detectedLevel: Level = jsonDefaultLevel;
+      let detectedSubject: Exclude<SubjectId, 'all'> = jsonDefaultSubject;
+
+      if (Array.isArray(parsed)) {
+        rawList = parsed;
+      } else if (parsed && typeof parsed === 'object') {
+        if (parsed.class) {
+          detectedLevel = Math.min(5, Math.max(1, Number(parsed.class))) as Level;
+        }
+        if (parsed.subject) {
+          const subStr = String(parsed.subject).toLowerCase();
+          if (subStr.includes('math')) detectedSubject = 'math';
+          else if (subStr.includes('eng')) detectedSubject = 'english';
+          else if (subStr.includes('hin')) detectedSubject = 'hindi';
+          else if (subStr.includes('sci') || subStr.includes('evs')) detectedSubject = 'science';
+          else if (subStr.includes('cod')) detectedSubject = 'coding';
+          else if (subStr.includes('man') || subStr.includes('mor')) detectedSubject = 'manners';
+        }
+        if (Array.isArray(parsed.questions)) {
+          rawList = parsed.questions;
+        }
+      }
+
+      if (rawList.length === 0) {
+        alert('JSON में कोई प्रश्न नहीं मिले!');
+        return;
+      }
+
+      const converted: Question[] = rawList.map((item, idx) => {
+        const qLevel: Level = item.class ? (Math.min(5, Math.max(1, Number(item.class))) as Level) : detectedLevel;
+        let qSubject: Exclude<SubjectId, 'all'> = detectedSubject;
+        if (item.subject) {
+          const subStr = String(item.subject).toLowerCase();
+          if (subStr.includes('math')) qSubject = 'math';
+          else if (subStr.includes('eng')) qSubject = 'english';
+          else if (subStr.includes('hin')) qSubject = 'hindi';
+          else if (subStr.includes('sci') || subStr.includes('evs')) qSubject = 'science';
+          else if (subStr.includes('cod')) qSubject = 'coding';
+          else if (subStr.includes('man') || subStr.includes('mor')) qSubject = 'manners';
+        }
+
+        const qText = item.question || item.questionText || item.questionHindi || `Question #${idx + 1}`;
+        const qHindi = item.questionHindi || item.question || qText;
+        let opts: string[] = [];
+        let corrIdx = 0;
+
+        if (Array.isArray(item.options) && item.options.length >= 2) {
+          opts = item.options.map((o: any) => String(o));
+          if (item.answer !== undefined) {
+            const ansStr = String(item.answer).trim().toLowerCase();
+            const found = opts.findIndex((o) => o.trim().toLowerCase() === ansStr);
+            corrIdx = found >= 0 ? found : 0;
+          } else if (item.correctIndex !== undefined) {
+            corrIdx = Number(item.correctIndex);
+          }
+        } else if (item.type === 'true_false' || typeof item.answer === 'boolean') {
+          opts = ['True (सही) ✅', 'False (गलत) ❌', 'Cannot say', 'Both'];
+          corrIdx = item.answer === true || String(item.answer).toLowerCase() === 'true' ? 0 : 1;
+        } else {
+          const ansStr = String(item.answer || 'Answer');
+          opts = [ansStr, 'विकल्प B', 'विकल्प C', 'विकल्प D'];
+          corrIdx = 0;
+        }
+
+        while (opts.length < 4) {
+          opts.push(`विकल्प ${opts.length + 1}`);
+        }
+        if (opts.length > 4) {
+          opts = opts.slice(0, 4);
+        }
+
+        return {
+          id: `json_q_${Date.now()}_${idx}_${Math.random()}`,
+          subject: qSubject,
+          level: qLevel,
+          question: qText,
+          questionHindi: qHindi,
+          options: opts,
+          correctIndex: corrIdx,
+          explanation: item.explanation || `Correct answer is ${opts[corrIdx]}!`,
+          explanationHindi: item.explanationHindi || item.explanation || `सही उत्तर ${opts[corrIdx]} है!`,
+          hint: item.hint || (item.topic ? `Topic: ${item.topic}` : 'ध्यान से सोचें!'),
+          icon: qSubject === 'math' ? '🔢' : qSubject === 'english' ? '📖' : qSubject === 'hindi' ? '🇮🇳' : '💡',
+          ncertChapter: `Class ${qLevel} ${item.topic || qSubject}`,
+          youtubeQuery: `${qSubject} class ${qLevel} lesson animation`,
+        };
+      });
+
+      setQuestions((prev) => [...converted, ...prev]);
+      soundManager.playCorrect();
+      setSuccessMsg(`🎉 ${converted.length} प्रश्न सफलतापूर्वक इंपोर्ट हो गए!`);
+      setJsonInput('');
+      setActiveTab('list');
+    } catch (err: any) {
+      alert(`JSON पार्स करने में त्रुटि: ${err.message || 'अमान्य JSON'}`);
+    }
+  };
+
+  const handleExportJson = () => {
+    const jsonStr = JSON.stringify(questions, null, 2);
+    navigator.clipboard.writeText(jsonStr);
+    soundManager.playTap();
+    alert('📋 सभी प्रश्न JSON प्रारूप में क्लिपबोर्ड पर कॉपी हो गए!');
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -125,7 +244,18 @@ export const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
             }`}
           >
             <Plus size={16} />
-            <span>नया प्रश्न जोड़ें (Add New)</span>
+            <span>फॉर्म से जोड़ें</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('json')}
+            className={`flex-1 py-2 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+              activeTab === 'json'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <FileCode size={16} />
+            <span>JSON एडमिन</span>
           </button>
           <button
             onClick={() => setActiveTab('list')}
@@ -136,7 +266,7 @@ export const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
             }`}
           >
             <BookOpen size={16} />
-            <span>सहेजे गए प्रश्न ({questions.length})</span>
+            <span>सहेजे गए ({questions.length})</span>
           </button>
         </div>
 
@@ -279,6 +409,83 @@ export const CustomQuestionModal: React.FC<CustomQuestionModalProps> = ({
                 </button>
               </div>
             </form>
+          ) : activeTab === 'json' ? (
+            <div className="space-y-4 text-xs font-bold text-slate-300">
+              <div className="bg-slate-950 p-4 rounded-2xl border border-purple-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileCode size={18} className="text-purple-400" />
+                    <span className="text-white font-black text-sm">एडमिन JSON इंपोर्ट (Bulk Upload Questions)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleExportJson}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition-all active:scale-95"
+                  >
+                    <Copy size={14} />
+                    <span>सभी कॉपी करें (Export)</span>
+                  </button>
+                </div>
+
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  नीचे बॉक्स में क्लास और प्रश्नों का JSON पेस्ट करें। यह MCQ, True/False, Fill in blanks, व Word Problems को अपने आप समझकर क्विज़ में जोड़ देगा!
+                </p>
+
+                {/* Default Fallbacks */}
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block mb-1 text-slate-400 text-[11px]">डिफ़ॉल्ट कक्षा (यदि JSON में न हो)</label>
+                    <select
+                      value={jsonDefaultLevel}
+                      onChange={(e) => setJsonDefaultLevel(Number(e.target.value) as Level)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white outline-none"
+                    >
+                      <option value={1}>Class 1 (Ahil)</option>
+                      <option value={2}>Class 2</option>
+                      <option value={3}>Class 3 (Ammeya)</option>
+                      <option value={4}>Class 4</option>
+                      <option value={5}>Class 5</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-slate-400 text-[11px]">डिफ़ॉल्ट विषय</label>
+                    <select
+                      value={jsonDefaultSubject}
+                      onChange={(e) => setJsonDefaultSubject(e.target.value as Exclude<SubjectId, 'all'>)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white outline-none"
+                    >
+                      <option value="math">गणित (Math)</option>
+                      <option value="english">अंग्रेज़ी (English)</option>
+                      <option value="hindi">हिंदी (Hindi)</option>
+                      <option value="science">विज्ञान (Science)</option>
+                      <option value="coding">कंप्यूटर (Coding)</option>
+                      <option value="manners">अच्छी आदतें (Manners)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* JSON Textarea */}
+                <div>
+                  <label className="block mb-1 text-slate-400 text-[11px]">JSON डेटा यहाँ पेस्ट करें:</label>
+                  <textarea
+                    rows={8}
+                    value={jsonInput}
+                    onChange={(e) => setJsonInput(e.target.value)}
+                    placeholder={`{\n  "class": 3,\n  "subject": "Mathematics",\n  "questions": [\n    {\n      "id": 1,\n      "type": "mcq",\n      "question": "What is 25 + 14?",\n      "options": ["29", "39", "49", "35"],\n      "answer": "39",\n      "explanation": "25 + 14 = 39"\n    }\n  ]\n}`}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 font-mono text-[11px] text-purple-200 outline-none focus:border-purple-500 placeholder:text-slate-600"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleImportJson}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                >
+                  <Download size={16} />
+                  <span>JSON प्रश्न इंपोर्ट करें (Import Questions)</span>
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="space-y-3">
               {questions.length === 0 ? (
