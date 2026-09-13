@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Mic, MicOff, Settings as SettingsIcon, Users } from 'lucide-react';
+import { Volume2, VolumeX, Mic, MicOff, Settings as SettingsIcon, Users, BarChart3, Heart } from 'lucide-react';
 import { Player, GameSettings } from '../types';
 import { soundManager } from '../utils/sound';
 import { speechReader } from '../utils/speech';
@@ -10,6 +10,8 @@ interface HeaderProps {
   onUpdateSettings: (newSettings: Partial<GameSettings>) => void;
   onOpenSettings: () => void;
   onOpenProfiles: () => void;
+  onOpenParentDashboard?: () => void;
+  onOpenManners?: () => void;
   inGame?: boolean;
   onExitGame?: () => void;
 }
@@ -20,6 +22,8 @@ export const Header: React.FC<HeaderProps> = ({
   onUpdateSettings,
   onOpenSettings,
   onOpenProfiles,
+  onOpenParentDashboard,
+  onOpenManners,
   inGame,
   onExitGame,
 }) => {
@@ -61,7 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
                   Junior Clash
                 </h1>
                 <p className="text-[10px] sm:text-xs text-slate-400 font-semibold leading-tight">
-                  Ammeya & Ahil • NCERT Battle
+                  Ammeya & Ahil • NCERT & Manners
                 </p>
               </div>
             </div>
@@ -87,6 +91,36 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
+          {/* Moral Stories & Manners Button */}
+          {!inGame && onOpenManners && (
+            <button
+              onClick={() => {
+                soundManager.playTap();
+                onOpenManners();
+              }}
+              title="Moral Stories & Good Manners Class"
+              className="p-2 rounded-xl bg-pink-500/20 text-pink-300 border border-pink-500/40 hover:bg-pink-500/30 transition-all active:scale-90 flex items-center gap-1"
+            >
+              <Heart size={16} className="text-pink-400 fill-pink-400" />
+              <span className="text-xs font-bold hidden sm:inline">Manners</span>
+            </button>
+          )}
+
+          {/* Parent MongoDB Performance Tracker */}
+          {!inGame && onOpenParentDashboard && (
+            <button
+              onClick={() => {
+                soundManager.playTap();
+                onOpenParentDashboard();
+              }}
+              title="Parent Performance Tracker (MongoDB)"
+              className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition-all active:scale-90 flex items-center gap-1"
+            >
+              <BarChart3 size={16} className="text-emerald-400" />
+              <span className="text-xs font-bold hidden sm:inline">Tracker</span>
+            </button>
+          )}
+
           {/* Read Aloud (TTS) Toggle */}
           <button
             onClick={toggleTts}

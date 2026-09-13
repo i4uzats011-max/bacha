@@ -3,6 +3,7 @@ import { Volume2, Lightbulb, Flame, ArrowRight, Sparkles, CheckCircle2, XCircle,
 import { Player, Question, GameSettings, AnswerLog } from '../types';
 import { soundManager } from '../utils/sound';
 import { speechReader } from '../utils/speech';
+import { VoiceAssistant } from './VoiceAssistant';
 
 interface BattleArenaProps {
   players: [Player, Player];
@@ -249,33 +250,47 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
               <p className="text-sm sm:text-base font-semibold text-amber-300 leading-snug">
                 {currentQuestion.questionHindi}
               </p>
+              {/* Urdu Translation if present */}
+              {currentQuestion.questionUrdu && (
+                <p className="text-sm sm:text-base font-bold text-emerald-300 leading-snug" dir="rtl">
+                  {currentQuestion.questionUrdu}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-            {/* Voice Read Aloud Button */}
-            <button
-              onClick={handleSpeak}
-              aria-label="Read Question Aloud"
-              title="Listen to question"
-              className={`p-2.5 sm:p-3 rounded-2xl transition-all active:scale-90 ${
-                isSpeaking
-                  ? 'bg-emerald-500 text-white animate-pulse'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-              }`}
-            >
-              <Volume2 size={20} />
-            </button>
+            {/* Interactive Voice Assistant */}
+            <VoiceAssistant
+              currentQuestion={currentQuestion}
+              childName={activePlayer.name}
+            />
 
-            {/* YouTube Video Hint Button */}
-            <button
-              onClick={() => handleOpenYouTube(currentQuestion.youtubeQuery)}
-              title="Watch video hint on YouTube"
-              className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black flex items-center gap-1 shadow-md shadow-rose-600/30 active:scale-95 transition-all"
-            >
-              <Video size={13} />
-              <span>Video Hint</span>
-            </button>
+            <div className="flex items-center gap-1.5 mt-1">
+              {/* Voice Read Aloud Button */}
+              <button
+                onClick={handleSpeak}
+                aria-label="Read Question Aloud"
+                title="Listen to question"
+                className={`p-2.5 rounded-xl transition-all active:scale-90 ${
+                  isSpeaking
+                    ? 'bg-emerald-500 text-white animate-pulse'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                }`}
+              >
+                <Volume2 size={18} />
+              </button>
+
+              {/* YouTube Video Hint Button */}
+              <button
+                onClick={() => handleOpenYouTube(currentQuestion.youtubeQuery)}
+                title="Watch video hint on YouTube"
+                className="px-2.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black flex items-center gap-1 shadow-md shadow-rose-600/30 active:scale-95 transition-all"
+              >
+                <Video size={13} />
+                <span>Video Hint</span>
+              </button>
+            </div>
           </div>
         </div>
 

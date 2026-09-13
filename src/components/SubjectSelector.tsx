@@ -85,6 +85,26 @@ const SUBJECTS: SubjectCardDef[] = [
     tag: 'LOOKING AROUND 🌍',
     description: 'Living things & 5 senses (Class 1) vs Poonam\'s Day Out & photosynthesis (Class 3)'
   },
+  {
+    id: 'urdu',
+    title: 'Urdu Adab (اردو ادب)',
+    hindiTitle: 'उर्दू सीखें (NCERT Ibtidai Urdu)',
+    emoji: '🇵🇰',
+    gradient: 'from-emerald-600/20 via-teal-600/20 to-green-600/20',
+    border: 'border-emerald-500/40 hover:border-emerald-400',
+    tag: 'IBTIDAI URDU 📖',
+    description: 'حروف تہجی، گنتی، واحد جمع، اور آسان الفاظ (Class 1 to 5)'
+  },
+  {
+    id: 'manners',
+    title: 'Good Manners & Morals',
+    hindiTitle: 'अच्छी आदतें व संस्कार (اخلاقی کہانیاں)',
+    emoji: '💖',
+    gradient: 'from-pink-600/20 via-rose-600/20 to-purple-600/20',
+    border: 'border-pink-500/40 hover:border-pink-400',
+    tag: 'MORAL CLASSES 🌟',
+    description: 'Respect elders, speak truth, table manners & sharing with siblings'
+  },
 ];
 
 export const SubjectSelector: React.FC<SubjectSelectorProps> = ({

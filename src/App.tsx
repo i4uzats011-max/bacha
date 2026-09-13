@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Player, SubjectId, GameMode, GameSettings, AnswerLog, Question, Level } from './types';
+import { Player, SubjectId, GameMode, GameSettings, AnswerLog, Question, Level, MatchRecord } from './types';
 import { Header } from './components/Header';
 import { SubjectSelector } from './components/SubjectSelector';
 import { BattleArena } from './components/BattleArena';
@@ -8,6 +8,8 @@ import { PracticeMode } from './components/PracticeMode';
 import { VictoryModal } from './components/VictoryModal';
 import { ProfileSetupModal } from './components/ProfileSetupModal';
 import { ParentSettingsModal } from './components/ParentSettingsModal';
+import { ParentDashboard } from './components/ParentDashboard';
+import { MannersHub } from './components/MannersHub';
 import { getQuestionForPlayer } from './data/dynamicQuestions';
 import { soundManager } from './utils/sound';
 import { speechReader } from './utils/speech';
@@ -88,6 +90,8 @@ export function App() {
   // Modals
   const [isProfilesOpen, setIsProfilesOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isParentDashboardOpen, setIsParentDashboardOpen] = useState(false);
+  const [isMannersHubOpen, setIsMannersHubOpen] = useState(false);
 
   // Game flow
   const [gameMode, setGameMode] = useState<GameMode>('battle');
@@ -123,8 +127,58 @@ export function App() {
     ]);
   };
 
+  // Save match results to MongoDB
+  const saveMatchRecord = async (finalPlayers: [Player, Player], logs: AnswerLog[]) => {
+    const matchRecord: MatchRecord = {
+      subject: currentSubject,
+      battleLevel: settings.battleLevel,
+      totalRounds: settings.totalRounds,
+      p1: {
+        name: finalPlayers[0].name,
+        level: finalPlayers[0].level,
+        score: finalPlayers[0].score,
+        correctAnswers: finalPlayers[0].correctAnswers,
+        totalAnswered: finalPlayers[0].totalAnswered,
+      },
+      p2: {
+        name: finalPlayers[1].name,
+        level: finalPlayers[1].level,
+        score: finalPlayers[1].score,
+        correctAnswers: finalPlayers[1].correctAnswers,
+        totalAnswered: finalPlayers[1].totalAnswered,
+      },
+      logs,
+      createdAt: new Date().toISOString(),
+    };
+
+    // 1. Cache to local storage
+    try {
+      const local = JSON.parse(localStorage.getItem('jc_saved_records') || '[]');
+      local.unshift(matchRecord);
+      localStorage.setItem('jc_saved_records', JSON.stringify(local.slice(0, 50)));
+    } catch {
+      // ignore
+    }
+
+    // 2. Post to MongoDB
+    try {
+      await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(matchRecord),
+      });
+    } catch (err) {
+      console.warn('[MongoDB] Saved to local cache:', err);
+    }
+  };
+
   // Start Battle Match
   const handleStartBattle = (subject: SubjectId) => {
+    if (subject === 'manners') {
+      setIsMannersHubOpen(true);
+      return;
+    }
+
     setCurrentSubject(subject);
     const newUsed = new Set<string>();
     setUsedIds(newUsed);
@@ -198,6 +252,7 @@ export function App() {
     } else {
       // Ahil finished turn -> check if round ended
       if (roundNumber >= settings.totalRounds) {
+        saveMatchRecord(players, answerLogs);
         setGameState('victory');
       } else {
         setRoundNumber((r) => r + 1);
@@ -211,24 +266,27 @@ export function App() {
 
   // Split both answered
   const handleSplitBothAnswered = (p1Log: AnswerLog, p2Log: AnswerLog) => {
-    setAnswerLogs((prev) => [...prev, p1Log, p2Log]);
+    const updatedLogs = [...answerLogs, p1Log, p2Log];
+    setAnswerLogs(updatedLogs);
 
-    setPlayers((prev) => [
+    const updatedPlayers: [Player, Player] = [
       {
-        ...prev[0],
-        score: prev[0].score + (p1Log.isCorrect ? 10 : 0),
-        correctAnswers: prev[0].correctAnswers + (p1Log.isCorrect ? 1 : 0),
-        totalAnswered: prev[0].totalAnswered + 1,
+        ...players[0],
+        score: players[0].score + (p1Log.isCorrect ? 10 : 0),
+        correctAnswers: players[0].correctAnswers + (p1Log.isCorrect ? 1 : 0),
+        totalAnswered: players[0].totalAnswered + 1,
       },
       {
-        ...prev[1],
-        score: prev[1].score + (p2Log.isCorrect ? 10 : 0),
-        correctAnswers: prev[1].correctAnswers + (p2Log.isCorrect ? 1 : 0),
-        totalAnswered: prev[1].totalAnswered + 1,
+        ...players[1],
+        score: players[1].score + (p2Log.isCorrect ? 10 : 0),
+        correctAnswers: players[1].correctAnswers + (p2Log.isCorrect ? 1 : 0),
+        totalAnswered: players[1].totalAnswered + 1,
       },
-    ]);
+    ];
+    setPlayers(updatedPlayers);
 
     if (roundNumber >= settings.totalRounds) {
+      saveMatchRecord(updatedPlayers, updatedLogs);
       setGameState('victory');
     } else {
       setRoundNumber((r) => r + 1);
@@ -248,6 +306,14 @@ export function App() {
     ]);
   };
 
+  // Add bonus stars from Good Manners class
+  const handleAddMannerStars = (stars: number) => {
+    setPlayers((prev) => [
+      { ...prev[0], score: prev[0].score + stars },
+      { ...prev[1], score: prev[1].score + stars },
+    ]);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-reading">
       <Header
@@ -256,6 +322,8 @@ export function App() {
         onUpdateSettings={(newSettings) => setSettings((s) => ({ ...s, ...newSettings }))}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenProfiles={() => setIsProfilesOpen(true)}
+        onOpenParentDashboard={() => setIsParentDashboardOpen(true)}
+        onOpenManners={() => setIsMannersHubOpen(true)}
         inGame={gameState === 'battle' || gameState === 'split'}
         onExitGame={() => setGameState('home')}
       />
@@ -318,6 +386,7 @@ export function App() {
         />
       )}
 
+      {/* Profiles Modal */}
       {isProfilesOpen && (
         <ProfileSetupModal
           players={players}
@@ -326,12 +395,29 @@ export function App() {
         />
       )}
 
+      {/* Parent Settings Modal */}
       {isSettingsOpen && (
         <ParentSettingsModal
           settings={settings}
           onSave={(newSettings) => setSettings(newSettings)}
           onResetScores={handleResetScores}
           onClose={() => setIsSettingsOpen(false)}
+        />
+      )}
+
+      {/* Parent MongoDB Analytics Dashboard */}
+      {isParentDashboardOpen && (
+        <ParentDashboard
+          players={players}
+          onClose={() => setIsParentDashboardOpen(false)}
+        />
+      )}
+
+      {/* Moral Stories & Good Manners Hub */}
+      {isMannersHubOpen && (
+        <MannersHub
+          onClose={() => setIsMannersHubOpen(false)}
+          onAddStars={handleAddMannerStars}
         />
       )}
     </div>
