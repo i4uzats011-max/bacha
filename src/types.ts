@@ -65,7 +65,18 @@ export interface MoralStory {
   quizQuestion: Question;
 }
 
-export type GameMode = 'battle' | 'split' | 'practice';
+export type GameMode = 'battle' | 'split' | 'practice' | 'puzzle';
+
+export type MathOperation = 'add' | 'multiply' | 'subtract';
+
+export interface PuzzleBubble {
+  id: string;
+  value: number;
+  colorClass: string;
+  isPopping?: boolean;
+  isVanished?: boolean;
+  delayIndex: number;
+}
 
 export interface GameSettings {
   battleLevel: Level; // Level chosen for elder child (Ammeya). Ahil gets max(1, battleLevel - 2)

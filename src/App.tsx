@@ -10,6 +10,8 @@ import { ProfileSetupModal } from './components/ProfileSetupModal';
 import { ParentSettingsModal } from './components/ParentSettingsModal';
 import { ParentDashboard } from './components/ParentDashboard';
 import { MannersHub } from './components/MannersHub';
+import { NumberPuzzleGame } from './components/NumberPuzzleGame';
+import { CustomQuestionModal } from './components/CustomQuestionModal';
 import { getQuestionForPlayer } from './data/dynamicQuestions';
 import { soundManager } from './utils/sound';
 import { speechReader } from './utils/speech';
@@ -92,11 +94,12 @@ export function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isParentDashboardOpen, setIsParentDashboardOpen] = useState(false);
   const [isMannersHubOpen, setIsMannersHubOpen] = useState(false);
+  const [isCustomQuestionsOpen, setIsCustomQuestionsOpen] = useState(false);
 
   // Game flow
   const [gameMode, setGameMode] = useState<GameMode>('battle');
   const [currentSubject, setCurrentSubject] = useState<SubjectId>('all');
-  const [gameState, setGameState] = useState<'home' | 'battle' | 'split' | 'practice' | 'victory'>('home');
+  const [gameState, setGameState] = useState<'home' | 'battle' | 'split' | 'practice' | 'victory' | 'puzzle'>('home');
 
   // Battle session state
   const [roundNumber, setRoundNumber] = useState(1);
@@ -324,7 +327,9 @@ export function App() {
         onOpenProfiles={() => setIsProfilesOpen(true)}
         onOpenParentDashboard={() => setIsParentDashboardOpen(true)}
         onOpenManners={() => setIsMannersHubOpen(true)}
-        inGame={gameState === 'battle' || gameState === 'split'}
+        onOpenPuzzle={() => setGameState('puzzle')}
+        onOpenCustomQuestions={() => setIsCustomQuestionsOpen(true)}
+        inGame={gameState === 'battle' || gameState === 'split' || gameState === 'puzzle'}
         onExitGame={() => setGameState('home')}
       />
 
@@ -338,6 +343,23 @@ export function App() {
             onSelectMode={(mode) => setGameMode(mode)}
             onStartQuiz={(sub) => handleStartBattle(sub)}
             onSoloPractice={(lvl, s) => handleStartPractice(lvl, s)}
+            onOpenPuzzle={() => setGameState('puzzle')}
+          />
+        )}
+
+        {gameState === 'puzzle' && (
+          <NumberPuzzleGame
+            players={players}
+            battleLevel={settings.battleLevel}
+            soundEnabled={settings.soundEnabled}
+            ttsEnabled={settings.ttsEnabled}
+            onExit={() => setGameState('home')}
+            onAddScore={(playerId, points) => {
+              setPlayers((prev) => [
+                playerId === 'p1' ? { ...prev[0], score: prev[0].score + points } : prev[0],
+                playerId === 'p2' ? { ...prev[1], score: prev[1].score + points } : prev[1],
+              ]);
+            }}
           />
         )}
 
@@ -418,6 +440,13 @@ export function App() {
         <MannersHub
           onClose={() => setIsMannersHubOpen(false)}
           onAddStars={handleAddMannerStars}
+        />
+      )}
+
+      {/* Custom Questions Modal */}
+      {isCustomQuestionsOpen && (
+        <CustomQuestionModal
+          onClose={() => setIsCustomQuestionsOpen(false)}
         />
       )}
     </div>

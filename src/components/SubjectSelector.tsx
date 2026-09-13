@@ -11,6 +11,7 @@ interface SubjectSelectorProps {
   onSelectMode: (mode: GameMode) => void;
   onStartQuiz: (subject: SubjectId) => void;
   onSoloPractice: (level: Level, subject: SubjectId) => void;
+  onOpenPuzzle?: () => void;
 }
 
 interface SubjectCardDef {
@@ -115,12 +116,56 @@ export const SubjectSelector: React.FC<SubjectSelectorProps> = ({
   onSelectMode,
   onStartQuiz,
   onSoloPractice,
+  onOpenPuzzle,
 }) => {
   const ammeyaLevel = battleLevel;
   const ahilLevel = Math.max(1, (battleLevel - 2) as Level) as Level;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-4 sm:py-6 space-y-6">
+      {/* Featured Math Target Number Pop Puzzle Banner */}
+      {onOpenPuzzle && (
+        <div
+          onClick={() => {
+            soundManager.playTap();
+            onOpenPuzzle();
+          }}
+          className="group cursor-pointer relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-600/30 via-rose-600/30 to-purple-600/30 p-5 border-2 border-amber-400/40 hover:border-amber-300 shadow-2xl transition-all hover:scale-[1.01] active:scale-98"
+        >
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-rose-500 p-0.5 shadow-lg shadow-amber-500/40 shrink-0 flex items-center justify-center">
+                <div className="w-full h-full bg-slate-950 rounded-2xl flex flex-col items-center justify-center">
+                  <span className="text-2xl">🎯</span>
+                  <span className="text-[10px] font-black text-amber-300">12</span>
+                </div>
+              </div>
+
+              <div className="space-y-1 text-center sm:text-left">
+                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-black uppercase tracking-wider border border-amber-400/30">
+                    NEW FEATURE ✨
+                  </span>
+                  <span className="text-xs text-rose-300 font-bold">
+                    4 + 8 = 12 • 13 × 2 = 26
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-white group-hover:text-amber-300 transition-colors">
+                  संख्या जोड़-गुणा पहेली (Target Number Pop Puzzle)
+                </h3>
+                <p className="text-xs text-slate-300 max-w-lg">
+                  एक रैंडम लक्ष्य नंबर आएगा! बिखरे हुए रंग-बिरंगे बबल्स में से सही जोड़े चुनो और उन्हें गायब करो!
+                </p>
+              </div>
+            </div>
+
+            <button className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-amber-500/30 flex items-center gap-1.5 shrink-0 group-hover:scale-105 transition-all">
+              <span>पहेली खेलें ➔</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Sibling Hero Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900/70 via-purple-900/60 to-pink-900/70 p-5 sm:p-7 border border-indigo-500/30 shadow-2xl">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

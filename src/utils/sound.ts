@@ -180,6 +180,58 @@ class SoundManager {
       // ignore
     }
   }
+
+  // Cheerful bubble pop sound
+  playBubblePop() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(900, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.12);
+
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Musical note on bubble tap
+  playBubbleTap(val: number = 0) {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const scale = [392, 440, 523.25, 587.33, 659.25, 783.99, 880, 1046.5];
+      const freq = scale[Math.abs(val) % scale.length];
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.15);
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export const soundManager = new SoundManager();

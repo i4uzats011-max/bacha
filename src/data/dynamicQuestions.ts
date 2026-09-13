@@ -127,6 +127,16 @@ function generateDynamicMathLevel3(): Question {
   }
 }
 
+// Get custom questions stored by parent
+function getCustomQuestions(): Question[] {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('jc_custom_questions_user') : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 // Generate dynamic question based on level
 export function getQuestionForPlayer(level: Level, subject: SubjectId, usedIds: Set<string>): Question {
   // 30% chance for fresh dynamic arithmetic on math or all
@@ -137,8 +147,12 @@ export function getQuestionForPlayer(level: Level, subject: SubjectId, usedIds: 
     if (level >= 3) return generateDynamicMathLevel3();
   }
 
-  // Filter from curated NCERT questions
-  let filtered = ncertQuestions.filter((q) => {
+  // Combine custom parent questions with curated NCERT questions
+  const customQuestions = getCustomQuestions();
+  const fullQuestionsPool = [...customQuestions, ...ncertQuestions];
+
+  // Filter from questions
+  let filtered = fullQuestionsPool.filter((q) => {
     const matchesSubject = subject === 'all' || q.subject === subject;
     const matchesLevel = q.level === level;
     return matchesSubject && matchesLevel;
@@ -146,7 +160,7 @@ export function getQuestionForPlayer(level: Level, subject: SubjectId, usedIds: 
 
   // If none match exact level, fallback to nearest level
   if (filtered.length === 0) {
-    filtered = ncertQuestions.filter((q) => subject === 'all' || q.subject === subject);
+    filtered = fullQuestionsPool.filter((q) => subject === 'all' || q.subject === subject);
   }
 
   // Exclude already used questions in this battle

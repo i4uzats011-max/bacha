@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Mic, MicOff, Settings as SettingsIcon, Users, BarChart3, Heart } from 'lucide-react';
+import { Volume2, VolumeX, Mic, MicOff, Settings as SettingsIcon, Users, BarChart3, Heart, Puzzle, PlusCircle } from 'lucide-react';
 import { Player, GameSettings } from '../types';
 import { soundManager } from '../utils/sound';
 import { speechReader } from '../utils/speech';
@@ -12,6 +12,8 @@ interface HeaderProps {
   onOpenProfiles: () => void;
   onOpenParentDashboard?: () => void;
   onOpenManners?: () => void;
+  onOpenPuzzle?: () => void;
+  onOpenCustomQuestions?: () => void;
   inGame?: boolean;
   onExitGame?: () => void;
 }
@@ -24,6 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenProfiles,
   onOpenParentDashboard,
   onOpenManners,
+  onOpenPuzzle,
+  onOpenCustomQuestions,
   inGame,
   onExitGame,
 }) => {
@@ -91,6 +95,35 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
+          {/* Math Number Bubble Puzzle Button */}
+          {!inGame && onOpenPuzzle && (
+            <button
+              onClick={() => {
+                soundManager.playTap();
+                onOpenPuzzle();
+              }}
+              title="संख्या जोड़-गुणा पहेली (Target Number Puzzle)"
+              className="p-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all active:scale-90 flex items-center gap-1 shadow-sm"
+            >
+              <Puzzle size={16} className="text-amber-400" />
+              <span className="text-xs font-black hidden sm:inline">संख्या पहेली</span>
+            </button>
+          )}
+
+          {/* Custom Questions Manager */}
+          {!inGame && onOpenCustomQuestions && (
+            <button
+              onClick={() => {
+                soundManager.playTap();
+                onOpenCustomQuestions();
+              }}
+              title="कस्टम प्रश्न जोड़ें (Add Custom Questions)"
+              className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30 transition-all active:scale-90 flex items-center gap-1 shadow-sm"
+            >
+              <PlusCircle size={16} className="text-indigo-400" />
+              <span className="text-xs font-bold hidden md:inline">प्रश्न जोड़ें</span>
+            </button>
+          )}
           {/* Moral Stories & Manners Button */}
           {!inGame && onOpenManners && (
             <button
