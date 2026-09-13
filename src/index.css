@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+}
+
+/* Custom playful pulse and bounce helpers */
+.bounce-hover:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.bounce-active:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+/* Glassmorphism kid cards */
+.kid-card {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Smooth animated progress bars */
+.progress-bar-smooth {
+  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Mobile safe area padding */
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
